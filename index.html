@@ -1,0 +1,942 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Text-to-Speech Virtual Mic</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        h2 {
+            color: #555;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 5px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .button-group button {
+            flex: 1;
+            min-width: 120px;
+        }
+        .info-panel {
+            margin-top: 15px;
+            padding: 15px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+            border-left: 4px solid #007bff;
+        }
+        .info-panel h3 {
+            margin-top: 0;
+            color: #495057;
+        }
+        .info-panel p {
+            margin: 5px 0;
+            font-family: monospace;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+            display: none;
+        }
+        .status.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .screenshot-section {
+            text-align: center;
+        }
+        .screenshot-container {
+            margin: 20px 0;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            background-color: #f8f9fa;
+            min-height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .screenshot-container img {
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 6px;
+        }
+        .screenshot-placeholder {
+            color: #6c757d;
+            font-style: italic;
+        }
+        .screenshot-controls {
+            margin: 15px 0;
+        }
+        .screenshot-controls button {
+            margin: 0 5px;
+            width: auto;
+            min-width: 120px;
+        }
+        
+        /* Popup styles */
+        .popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .popup {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            max-width: 400px;
+            width: 90%;
+            position: relative;
+            animation: popupSlideIn 0.3s ease-out;
+        }
+        
+        @keyframes popupSlideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .popup-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .popup-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 0;
+        }
+        
+        .popup-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+        
+        .popup-close:hover {
+            background-color: #f0f0f0;
+            color: #333;
+        }
+        
+        .popup-content {
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        
+        .popup-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        
+        .popup-actions button {
+            width: auto;
+            min-width: 80px;
+            padding: 8px 16px;
+        }
+        
+        .popup.success .popup-title {
+            color: #28a745;
+        }
+        
+        .popup.error .popup-title {
+            color: #dc3545;
+        }
+        
+        .popup.info .popup-title {
+            color: #007bff;
+        }
+        
+        .popup.warning .popup-title {
+            color: #ffc107;
+        }
+    </style>
+</head>
+<body>
+    <!-- Popup Overlay -->
+    <div class="popup-overlay" id="popupOverlay">
+        <div class="popup" id="popup">
+            <div class="popup-header">
+                <h3 class="popup-title" id="popupTitle">Notification</h3>
+                <button class="popup-close" id="popupClose" onclick="dismissPopup()">&times;</button>
+            </div>
+            <div class="popup-content" id="popupContent">
+                This is a popup message.
+            </div>
+            <div class="popup-actions" id="popupActions">
+                <button onclick="dismissPopup()">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h1>Text-to-Speech Virtual Microphone & Google Meet Bot</h1>
+        
+        <!-- Google Meet Section -->
+        <div class="section">
+            <h2>Google Meet Bot</h2>
+            <form id="meetForm">
+                <div class="form-group">
+                    <label for="meetUrl">Google Meet URL:</label>
+                    <input type="text" id="meetUrl" name="meetUrl" placeholder="https://meet.google.com/xxx-xxxx-xxx" required>
+                </div>
+                <div class="button-group">
+                    <button type="button" id="initBotBtn">Initialize Bot</button>
+                    <button type="button" id="joinBtn">Join Meeting</button>
+                    <button type="button" id="leaveBtn" >Leave Meeting</button>
+                    <button type="button" id="statusBtn">Check Status</button>
+                    <button type="button" id="closeBotBtn">Close Bot</button>
+                </div>
+                <div class="button-group" style="margin-top: 10px;">
+                    <button type="button" id="enableMicBtn" >Enable Microphone</button>
+                    <button type="button" id="disableMicBtn" >Disable Microphone</button>
+                    <button type="button" id="testVirtualMicBtn">Test Virtual Mic</button>
+                </div>
+                <div class="button-group" style="margin-top: 10px;">
+                    <button type="button" id="clearPopupsBtn" >Clear Popups</button>
+                    <button type="button" id="testPopupBtn">Test Popup System</button>
+                </div>
+            </form>
+            <div id="meetStatus" class="status"></div>
+            <div id="meetingInfo" class="info-panel" style="display: none;">
+                <h3>Meeting Status</h3>
+                <p id="meetingUrl">URL: -</p>
+                <p id="meetingState">State: -</p>
+                <p id="microphoneState">Microphone: -</p>
+            </div>
+        </div>
+
+        <!-- Screenshot Section -->
+        <div class="section screenshot-section">
+            <h2>Live Screenshot</h2>
+            <div class="screenshot-container" id="screenshotContainer">
+                <div class="screenshot-placeholder">No screenshot available</div>
+            </div>
+            <div class="screenshot-controls">
+                <button type="button" id="takeScreenshotBtn" >Take Screenshot</button>
+                <button type="button" id="startStreamBtn" >Start Stream</button>
+                <button type="button" id="stopStreamBtn" >Stop Stream</button>
+            </div>
+            <div id="screenshotStatus" class="status"></div>
+        </div>
+
+        <!-- TTS Section -->
+        <div class="section">
+            <h2>Text-to-Speech</h2>
+            <form id="ttsForm">
+                <div class="form-group">
+                    <label for="text">Enter text to speak:</label>
+                    <input type="text" id="text" name="text" value="Hello from Go! Hey This is a test tts message." required>
+                </div>
+                <button type="submit" id="submitBtn">Generate and Send Audio</button>
+            </form>
+            <div id="status" class="status"></div>
+        </div>
+    </div>
+
+    <script>
+        // Popup functionality
+        function showPopup(title, message, type = 'info', actions = null) {
+            const overlay = document.getElementById('popupOverlay');
+            const popup = document.getElementById('popup');
+            const popupTitle = document.getElementById('popupTitle');
+            const popupContent = document.getElementById('popupContent');
+            const popupActions = document.getElementById('popupActions');
+            
+            // Set popup type class
+            popup.className = 'popup ' + type;
+            
+            // Set content
+            popupTitle.textContent = title;
+            popupContent.innerHTML = message;
+            
+            // Set custom actions or default OK button
+            if (actions) {
+                popupActions.innerHTML = actions;
+            } else {
+                popupActions.innerHTML = '<button onclick="dismissPopup()">OK</button>';
+            }
+            
+            // Show popup
+            overlay.style.display = 'flex';
+            
+            // Auto-dismiss after 5 seconds for success messages
+            if (type === 'success') {
+                setTimeout(() => {
+                    dismissPopup();
+                }, 5000);
+            }
+        }
+        
+        function dismissPopup() {
+            const overlay = document.getElementById('popupOverlay');
+            overlay.style.display = 'none';
+        }
+        
+        function showSuccessPopup(title, message) {
+            showPopup(title, message, 'success');
+        }
+        
+        function showErrorPopup(title, message) {
+            showPopup(title, message, 'error');
+        }
+        
+        function showInfoPopup(title, message) {
+            showPopup(title, message, 'info');
+        }
+        
+        function showWarningPopup(title, message) {
+            showPopup(title, message, 'warning');
+        }
+        
+        function showConfirmPopup(title, message, onConfirm, onCancel = null) {
+            const actions = 
+                '<button onclick="dismissPopup(); ' + (onCancel ? onCancel + '()' : '') + '">Cancel</button>' +
+                '<button onclick="dismissPopup(); ' + onConfirm + '()" style="background-color: #007bff;">Confirm</button>';
+            showPopup(title, message, 'info', actions);
+        }
+        
+        // Close popup when clicking outside
+        document.getElementById('popupOverlay').addEventListener('click', function(e) {
+            if (e.target === this) {
+                dismissPopup();
+            }
+        });
+        
+        // Close popup with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                dismissPopup();
+            }
+        });
+
+        // Function to update button states based on bot and meeting status
+        async function updateButtonStates() {
+            try {
+                // Check bot initialization status
+                const botResponse = await fetch('/bot-status');
+                const botStatus = await botResponse.json();
+                
+                // Check meeting status
+                const meetingResponse = await fetch('/meeting-status');
+                const meetingStatus = await meetingResponse.json();
+                
+                const isBotInitialized = botStatus.initialized;
+                const inMeeting = meetingStatus.inMeeting;
+                
+                // Initialize bot button is disabled if bot is already initialized
+                document.getElementById('initBotBtn').disabled = isBotInitialized;
+                
+                // Screenshot buttons are enabled if bot is initialized (Chrome is open)
+                document.getElementById('takeScreenshotBtn').disabled = !isBotInitialized;
+                document.getElementById('startStreamBtn').disabled = !isBotInitialized;
+                
+                // Meeting-specific buttons are enabled only when in meeting
+                document.getElementById('leaveBtn').disabled = !inMeeting;
+                document.getElementById('enableMicBtn').disabled = !inMeeting;
+                document.getElementById('disableMicBtn').disabled = !inMeeting;
+                document.getElementById('clearPopupsBtn').disabled = !isBotInitialized;
+                
+                // Stop stream button follows stream state
+                if (!isBotInitialized) {
+                    document.getElementById('stopStreamBtn').disabled = false;
+                    if (screenshotInterval) {
+                        clearInterval(screenshotInterval);
+                        screenshotInterval = null;
+                    }
+                }
+                
+            } catch (error) {
+                console.log('Error updating button states:', error);
+                // On error, enable init button and disable others
+                document.getElementById('initBotBtn').disabled = false;
+                document.getElementById('takeScreenshotBtn').disabled = false;
+                document.getElementById('startStreamBtn').disabled = false;
+                document.getElementById('stopStreamBtn').disabled = false;
+                document.getElementById('leaveBtn').disabled = false;
+                document.getElementById('enableMicBtn').disabled = false;
+                document.getElementById('disableMicBtn').disabled = false;
+                document.getElementById('clearPopupsBtn').disabled = false;
+            }
+        }
+        
+        // Update button states on page load
+        updateButtonStates();
+
+        // Initialize Bot functionality
+        document.getElementById('initBotBtn').addEventListener('click', async function() {
+            const initBotBtn = document.getElementById('initBotBtn');
+            const meetStatus = document.getElementById('meetStatus');
+            
+            initBotBtn.disabled = false;
+            initBotBtn.textContent = 'Initializing...';
+            meetStatus.style.display = 'none';
+            
+            try {
+                const response = await fetch('/init-bot', {
+                    method: 'POST'
+                });
+                
+                const result = await response.text();
+                
+                if (response.ok) {
+                    showSuccessPopup('Bot Initialized', 'Chrome browser has been opened successfully! You can now take screenshots.');
+                    updateButtonStates();
+                } else {
+                    showErrorPopup('Initialization Failed', 'Failed to initialize bot: ' + result);
+                }
+            } catch (error) {
+                showErrorPopup('Connection Error', 'Failed to connect to server: ' + error.message);
+            }
+            
+            initBotBtn.disabled = false;
+            initBotBtn.textContent = 'Initialize Bot';
+        });
+
+        // Google Meet functionality
+        document.getElementById('joinBtn').addEventListener('click', async function() {
+            const joinBtn = document.getElementById('joinBtn');
+            const leaveBtn = document.getElementById('leaveBtn');
+            const meetStatus = document.getElementById('meetStatus');
+            const meetUrl = document.getElementById('meetUrl').value;
+            
+            if (!meetUrl) {
+                showErrorPopup('Invalid Input', 'Please enter a Google Meet URL');
+                return;
+            }
+            
+            joinBtn.disabled = false;
+            joinBtn.textContent = 'Joining...';
+            meetStatus.style.display = 'none';
+            
+            try {
+                const response = await fetch('/join-meeting', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: 'meetUrl=' + encodeURIComponent(meetUrl)
+                });
+                
+                const result = await response.text();
+                
+                if (response.ok) {
+                    showSuccessPopup('Meeting Joined', 'Successfully joined the meeting! You can now control the microphone and take screenshots.');
+                    updateButtonStates();
+                } else {
+                    showErrorPopup('Join Failed', 'Failed to join meeting: ' + result);
+                    joinBtn.disabled = false;
+                }
+            } catch (error) {
+                showErrorPopup('Connection Error', 'Failed to connect to server: ' + error.message);
+                joinBtn.disabled = false;
+            }
+            
+            meetStatus.style.display = 'block';
+            joinBtn.textContent = 'Join Meeting';
+        });
+
+        document.getElementById('leaveBtn').addEventListener('click', async function() {
+            const joinBtn = document.getElementById('joinBtn');
+            const leaveBtn = document.getElementById('leaveBtn');
+            const meetStatus = document.getElementById('meetStatus');
+            
+            leaveBtn.disabled = false;
+            leaveBtn.textContent = 'Leaving...';
+            meetStatus.style.display = 'none';
+            
+            try {
+                const response = await fetch('/leave-meeting', {
+                    method: 'POST'
+                });
+                
+                const result = await response.text();
+                
+                if (response.ok) {
+                    meetStatus.className = 'status success';
+                    meetStatus.textContent = 'Successfully left the meeting';
+                    joinBtn.disabled = false;
+                    updateButtonStates();
+                    // Stop streaming if active
+                    if (screenshotInterval) {
+                        clearInterval(screenshotInterval);
+                        screenshotInterval = null;
+                    }
+                    document.getElementById('meetingInfo').style.display = 'none';
+                } else {
+                    meetStatus.className = 'status error';
+                    meetStatus.textContent = 'Error: ' + result;
+                    leaveBtn.disabled = false;
+                }
+            } catch (error) {
+                meetStatus.className = 'status error';
+                meetStatus.textContent = 'Error: ' + error.message;
+                leaveBtn.disabled = false;
+            }
+            
+            meetStatus.style.display = 'block';
+            leaveBtn.textContent = 'Leave Meeting';
+        });
+
+        document.getElementById('statusBtn').addEventListener('click', async function() {
+            const statusBtn = document.getElementById('statusBtn');
+            const meetStatus = document.getElementById('meetStatus');
+            const meetingInfo = document.getElementById('meetingInfo');
+            
+            statusBtn.disabled = false;
+            statusBtn.textContent = 'Checking...';
+            
+            try {
+                const response = await fetch('/meeting-status');
+                const status = await response.json();
+                
+                if (response.ok) {
+                    // Update meeting info panel
+                    document.getElementById('meetingUrl').textContent = 'URL: ' + (status.url || 'N/A');
+                    document.getElementById('meetingState').textContent = 'In Meeting: ' + (status.inMeeting ? 'Yes' : 'No');
+                    document.getElementById('microphoneState').textContent = 'Microphone: ' + 
+                        (status.microphoneMuted !== undefined ? (status.microphoneMuted ? 'Muted' : 'Unmuted') : 'Unknown');
+                    
+                    meetingInfo.style.display = 'block';
+                    
+                    // Update button states
+                    updateButtonStates();
+                    
+                    meetStatus.className = 'status success';
+                    meetStatus.textContent = 'Status updated';
+                } else {
+                    meetStatus.className = 'status error';
+                    meetStatus.textContent = 'Error getting status';
+                }
+            } catch (error) {
+                meetStatus.className = 'status error';
+                meetStatus.textContent = 'Error: ' + error.message;
+            }
+            
+            meetStatus.style.display = 'block';
+            statusBtn.disabled = false;
+            statusBtn.textContent = 'Check Status';
+        });
+
+        document.getElementById('closeBotBtn').addEventListener('click', function() {
+            showConfirmPopup(
+                'Close Bot Session', 
+                'Are you sure you want to close the bot? This will end the browser session and leave any active meetings.',
+                'confirmCloseBot'
+            );
+        });
+        
+        async function confirmCloseBot() {
+            const closeBotBtn = document.getElementById('closeBotBtn');
+            const meetStatus = document.getElementById('meetStatus');
+            
+            closeBotBtn.disabled = false;
+            closeBotBtn.textContent = 'Closing...';
+            
+            try {
+                const response = await fetch('/close-bot', {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    showSuccessPopup('Bot Closed', 'Bot session has been closed successfully.');
+                    
+                    // Reset all buttons
+                    document.getElementById('joinBtn').disabled = false;
+                    document.getElementById('meetingInfo').style.display = 'none';
+                    updateButtonStates();
+                } else {
+                    showErrorPopup('Close Failed', 'Failed to close bot session.');
+                }
+            } catch (error) {
+                showErrorPopup('Connection Error', 'Failed to connect to server: ' + error.message);
+            }
+            
+            closeBotBtn.disabled = false;
+            closeBotBtn.textContent = 'Close Bot';
+        }
+
+        // Microphone control functionality
+        document.getElementById('enableMicBtn').addEventListener('click', async function() {
+            const enableMicBtn = document.getElementById('enableMicBtn');
+            const meetStatus = document.getElementById('meetStatus');
+            
+            enableMicBtn.disabled = false;
+            enableMicBtn.textContent = 'Enabling...';
+            meetStatus.style.display = 'none';
+            
+            try {
+                const response = await fetch('/enable-microphone', {
+                    method: 'POST'
+                });
+                
+                const result = await response.text();
+                
+                if (response.ok) {
+                    meetStatus.className = 'status success';
+                    meetStatus.textContent = 'Microphone enabled successfully';
+                    
+                    // Update microphone state display
+                    document.getElementById('microphoneState').textContent = 'Microphone: Unmuted';
+                } else {
+                    meetStatus.className = 'status error';
+                    meetStatus.textContent = 'Error: ' + result;
+                }
+            } catch (error) {
+                meetStatus.className = 'status error';
+                meetStatus.textContent = 'Error: ' + error.message;
+            }
+            
+            meetStatus.style.display = 'block';
+            enableMicBtn.disabled = false;
+            enableMicBtn.textContent = 'Enable Microphone';
+        });
+
+        document.getElementById('disableMicBtn').addEventListener('click', async function() {
+            const disableMicBtn = document.getElementById('disableMicBtn');
+            const meetStatus = document.getElementById('meetStatus');
+            
+            disableMicBtn.disabled = false;
+            disableMicBtn.textContent = 'Disabling...';
+            meetStatus.style.display = 'none';
+            
+            try {
+                const response = await fetch('/disable-microphone', {
+                    method: 'POST'
+                });
+                
+                const result = await response.text();
+                
+                if (response.ok) {
+                    meetStatus.className = 'status success';
+                    meetStatus.textContent = 'Microphone disabled successfully';
+                    
+                    // Update microphone state display
+                    document.getElementById('microphoneState').textContent = 'Microphone: Muted';
+                } else {
+                    meetStatus.className = 'status error';
+                    meetStatus.textContent = 'Error: ' + result;
+                }
+            } catch (error) {
+                meetStatus.className = 'status error';
+                meetStatus.textContent = 'Error: ' + error.message;
+            }
+            
+            meetStatus.style.display = 'block';
+            disableMicBtn.disabled = false;
+            disableMicBtn.textContent = 'Disable Microphone';
+        });
+
+        // Clear popups functionality
+        document.getElementById('clearPopupsBtn').addEventListener('click', async function() {
+            const clearPopupsBtn = document.getElementById('clearPopupsBtn');
+            const meetStatus = document.getElementById('meetStatus');
+            
+            clearPopupsBtn.disabled = false;
+            clearPopupsBtn.textContent = 'Clearing...';
+            meetStatus.style.display = 'none';
+            
+            try {
+                const response = await fetch('/clear-popups', {
+                    method: 'POST'
+                });
+                
+                const result = await response.text();
+                
+                if (response.ok) {
+                    showSuccessPopup('Popups Cleared', 'All popups in the Google Meet session have been cleared successfully.');
+                } else {
+                    showErrorPopup('Clear Failed', 'Failed to clear popups: ' + result);
+                }
+            } catch (error) {
+                showErrorPopup('Connection Error', 'Failed to connect to server: ' + error.message);
+            }
+            
+            clearPopupsBtn.disabled = false;
+            clearPopupsBtn.textContent = 'Clear Popups';
+        });
+
+        // Test popup functionality
+        document.getElementById('testPopupBtn').addEventListener('click', function() {
+            const popupTypes = ['success', 'error', 'info', 'warning'];
+            const randomType = popupTypes[Math.floor(Math.random() * popupTypes.length)];
+            
+            const messages = {
+                success: {
+                    title: 'Success!',
+                    message: 'This is a success popup. It will auto-dismiss in 5 seconds.'
+                },
+                error: {
+                    title: 'Error Occurred',
+                    message: 'This is an error popup. Click OK or the X to dismiss.'
+                },
+                info: {
+                    title: 'Information',
+                    message: 'This is an info popup with some useful information.'
+                },
+                warning: {
+                    title: 'Warning',
+                    message: 'This is a warning popup. Please pay attention!'
+                }
+            };
+            
+            const selected = messages[randomType];
+            showPopup(selected.title, selected.message, randomType);
+        });
+
+        // Virtual microphone test functionality
+        document.getElementById('testVirtualMicBtn').addEventListener('click', async function() {
+            const testVirtualMicBtn = document.getElementById('testVirtualMicBtn');
+            const meetStatus = document.getElementById('meetStatus');
+            
+            testVirtualMicBtn.disabled = false;
+            testVirtualMicBtn.textContent = 'Testing...';
+            meetStatus.style.display = 'none';
+            
+            try {
+                const response = await fetch('/test-virtual-mic', {
+                    method: 'POST'
+                });
+                
+                const result = await response.text();
+                
+                if (response.ok) {
+                    meetStatus.className = 'status success';
+                    meetStatus.textContent = 'Virtual microphone test completed - check console logs';
+                } else {
+                    meetStatus.className = 'status error';
+                    meetStatus.textContent = 'Error: ' + result;
+                }
+            } catch (error) {
+                meetStatus.className = 'status error';
+                meetStatus.textContent = 'Error: ' + error.message;
+            }
+            
+            meetStatus.style.display = 'block';
+            testVirtualMicBtn.disabled = false;
+            testVirtualMicBtn.textContent = 'Test Virtual Mic';
+        });
+
+        // Screenshot functionality
+        let screenshotInterval = null;
+        
+        document.getElementById('takeScreenshotBtn').addEventListener('click', async function() {
+            const takeScreenshotBtn = document.getElementById('takeScreenshotBtn');
+            const screenshotStatus = document.getElementById('screenshotStatus');
+            
+            takeScreenshotBtn.disabled = false;
+            takeScreenshotBtn.textContent = 'Taking...';
+            screenshotStatus.style.display = 'none';
+            
+            try {
+                const response = await fetch('/screenshot');
+                
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const imageUrl = URL.createObjectURL(blob);
+                    
+                    const container = document.getElementById('screenshotContainer');
+                    container.innerHTML = '<img src="' + imageUrl + '" alt="Screenshot">';
+                    
+                    screenshotStatus.className = 'status success';
+                    screenshotStatus.textContent = 'Screenshot taken successfully';
+                } else {
+                    const errorText = await response.text();
+                    screenshotStatus.className = 'status error';
+                    screenshotStatus.textContent = 'Error: ' + errorText;
+                }
+            } catch (error) {
+                screenshotStatus.className = 'status error';
+                screenshotStatus.textContent = 'Error: ' + error.message;
+            }
+            
+            screenshotStatus.style.display = 'block';
+            takeScreenshotBtn.disabled = false;
+            takeScreenshotBtn.textContent = 'Take Screenshot';
+        });
+
+        document.getElementById('startStreamBtn').addEventListener('click', function() {
+            const startStreamBtn = document.getElementById('startStreamBtn');
+            const stopStreamBtn = document.getElementById('stopStreamBtn');
+            const screenshotStatus = document.getElementById('screenshotStatus');
+            
+            if (screenshotInterval) {
+                clearInterval(screenshotInterval);
+            }
+            
+            // Take screenshot every 2 seconds
+            screenshotInterval = setInterval(async function() {
+                try {
+                    const response = await fetch('/screenshot');
+                    
+                    if (response.ok) {
+                        const blob = await response.blob();
+                        const imageUrl = URL.createObjectURL(blob);
+                        
+                        const container = document.getElementById('screenshotContainer');
+                        const existingImg = container.querySelector('img');
+                        if (existingImg) {
+                            URL.revokeObjectURL(existingImg.src); // Clean up old URL
+                        }
+                        container.innerHTML = '<img src="' + imageUrl + '" alt="Live Screenshot">';
+                    }
+                } catch (error) {
+                    console.error('Screenshot stream error:', error);
+                }
+            }, 2000);
+            
+            startStreamBtn.disabled = false;
+            stopStreamBtn.disabled = false;
+            
+            screenshotStatus.className = 'status success';
+            screenshotStatus.textContent = 'Screenshot streaming started (updates every 2 seconds)';
+            screenshotStatus.style.display = 'block';
+        });
+
+        document.getElementById('stopStreamBtn').addEventListener('click', function() {
+            const startStreamBtn = document.getElementById('startStreamBtn');
+            const stopStreamBtn = document.getElementById('stopStreamBtn');
+            const screenshotStatus = document.getElementById('screenshotStatus');
+            
+            if (screenshotInterval) {
+                clearInterval(screenshotInterval);
+                screenshotInterval = null;
+            }
+            
+            startStreamBtn.disabled = false;
+            stopStreamBtn.disabled = false;
+            
+            screenshotStatus.className = 'status success';
+            screenshotStatus.textContent = 'Screenshot streaming stopped';
+            screenshotStatus.style.display = 'block';
+        });
+
+        // TTS functionality
+        document.getElementById('ttsForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const status = document.getElementById('status');
+            const text = document.getElementById('text').value;
+            
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Processing...';
+            status.style.display = 'none';
+            
+            try {
+                const response = await fetch('/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: 'text=' + encodeURIComponent(text)
+                });
+                
+                const result = await response.text();
+                
+                if (response.ok) {
+                    showSuccessPopup('TTS Success', 'Audio generated and sent to virtual microphone successfully!');
+                } else {
+                    showErrorPopup('TTS Failed', 'Failed to generate audio: ' + result);
+                }
+            } catch (error) {
+                showErrorPopup('Connection Error', 'Failed to connect to server: ' + error.message);
+            }
+            
+            status.style.display = 'block';
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Generate and Send Audio';
+        });
+    </script>
+</body>
+</html>
