@@ -218,11 +218,3 @@ docker stop meetbot-go-container
 2. **Bot actions**: Extend `bot/bot.go` with new methods
 3. **UI updates**: Modify `index.html` for new controls
 4. **Audio features**: Update TTS pipeline in `generateAndSendTTS()`
-
-## License
-
-[Add your license information here]
-
-## Contributing
-
-[Add contribution guidelines here]
